@@ -19,13 +19,13 @@ let currentParams = {};
 
 // --- Page Routes ---
 const routes = {
-    '#home':           { file: 'pages/home.html',          title: 'Home',          script: 'Js/pages/home.js' },
-    '#stores':         { file: 'pages/stores.html',        title: 'Stores',        script: 'Js/pages/store.js' },
-    '#store-details':  { file: 'pages/store-details.html', title: 'Store Details', script: 'Js/pages/store.js' },
-    '#order-history':  { file: 'pages/order-history.html', title: 'My Orders',     script: 'Js/pages/order-history.js' },
-    '#profile':        { file: 'pages/profile.html',       title: 'My Account',    script: 'Js/pages/profile.js' },
-    '#order-request':  { file: 'pages/order-request.html', title: 'Place Request', script: 'Js/pages/order-request.js' },
-    '#manage-addresses': { file: 'pages/manage-addresses.html', title: 'My Addresses', script: 'Js/pages/manage-address.js' },
+    '#home':           { file: 'pages/home.html',          title: 'Home',          script: 'js/pages/home.js' },
+    '#stores':         { file: 'pages/stores.html',        title: 'Stores',        script: 'js/pages/store.js' },
+    '#store-details':  { file: 'pages/store-details.html', title: 'Store Details', script: 'js/pages/store.js' },
+    '#order-history':  { file: 'pages/order-history.html', title: 'My Orders',     script: 'js/pages/order-history.js' },
+    '#profile':        { file: 'pages/profile.html',       title: 'My Account',    script: 'js/pages/profile.js' },
+    '#order-request':  { file: 'pages/order-request.html', title: 'Place Request', script: 'js/pages/order-request.js' },
+    '#manage-addresses': { file: 'pages/manage-addresses.html', title: 'My Addresses', script: 'js/pages/manage-address.js' },
     '#help':           { file: 'pages/help.html',          title: 'Help',          script: null }
 };
 
