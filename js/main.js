@@ -19,12 +19,12 @@ let currentParams = {};
 
 // --- Page Routes ---
 const routes = {
-    '#home':           { file: 'pages/home.html',          title: 'Home',          script: 'js/pages/home.js' },
-    '#stores':         { file: 'pages/stores.html',        title: 'Stores',        script: 'js/pages/store.js' }, // Ensure this points to store.js
-    '#store-details':  { file: 'pages/store-details.html', title: 'Store Details', script: 'js/pages/store.js' }, // This also points to store.js
-    '#order-history':  { file: 'pages/order-history.html', title: 'My Orders',     script: 'js/pages/order-history.js' },
-    '#profile':        { file: 'pages/profile.html',       title: 'My Account',    script: 'js/pages/profile.js' },
-    '#order-request':  { file: 'pages/order-request.html', title: 'Place Request', script: 'js/pages/order-request.js' },
+    '#home':           { file: 'pages/home.html',          title: 'Home',          script: 'Js/pages/home.js' },
+    '#stores':         { file: 'pages/stores.html',        title: 'Stores',        script: 'Js/pages/store.js' },
+    '#store-details':  { file: 'pages/store-details.html', title: 'Store Details', script: 'Js/pages/store.js' },
+    '#order-history':  { file: 'pages/order-history.html', title: 'My Orders',     script: 'Js/pages/order-history.js' },
+    '#profile':        { file: 'pages/profile.html',       title: 'My Account',    script: 'Js/pages/profile.js' },
+    '#order-request':  { file: 'pages/order-request.html', title: 'Place Request', script: 'Js/pages/order-request.js' },
     '#manage-addresses': { file: 'pages/manage-addresses.html', title: 'My Addresses', script: 'Js/pages/manage-address.js' },
     '#help':           { file: 'pages/help.html',          title: 'Help',          script: null }
 };
@@ -36,12 +36,11 @@ async function loadPage(hash) {
     const routeKey = hash.split('?')[0] || '#home';
     const route = routes[routeKey] || routes['#home'];
 
-    // Basic loading text
     if (contentArea) {
         contentArea.innerHTML = `<div class="p-4 text-center text-slate-500">Loading...</div>`;
     } else {
         console.error("Fatal Error: #page-content-wrapper not found in index.html");
-        return; // Stop if the main container is missing
+        return;
     }
 
     updateActiveLinks(routeKey);
@@ -52,7 +51,6 @@ async function loadPage(hash) {
         if (!response.ok) throw new Error(`Page not found: ${route.file}`);
         const html = await response.text();
 
-        // Check again if contentArea exists before inserting HTML
         if (contentArea) {
             contentArea.innerHTML = html;
         } else {
@@ -60,21 +58,29 @@ async function loadPage(hash) {
              return;
         }
 
-
         if (route.script) {
-            const relativePath = route.script.replace('Js/', '');
-            // Add cache busting query parameter
-            const modulePath = `./${relativePath}?v=${new Date().getTime()}`;
-            const module = await import(modulePath);
+            // --- YAHAN BADLAAV KIYA GAYA HAI ---
+            // Ab path sahi banega (e.g., ./Js/pages/home.js?v=...)
+            const modulePath = `./${route.script}?v=${new Date().getTime()}`;
+            // --- END BADLAAV ---
 
-            if (module && typeof module.init === 'function') {
-                module.init(hash, currentParams);
+            try {
+                const module = await import(modulePath);
+                if (module && typeof module.init === 'function') {
+                    module.init(hash, currentParams);
+                }
+            } catch (importError) {
+                 // Yahaan specific import error dikhayein
+                 console.error(`Failed to import module: ${modulePath}`, importError);
+                 if (contentArea) {
+                     contentArea.innerHTML = `<div class="text-center p-5 text-red-600"><h3>Error Loading Page Script</h3><p>Could not load: ${route.script}</p><p>${importError.message}</p></div>`;
+                 }
             }
         }
 
     } catch (error) {
-        console.error('Error loading page:', error);
-         if (contentArea) { // Check if contentArea still exists
+        console.error('Error loading page HTML:', error);
+         if (contentArea) {
             contentArea.innerHTML = `<div class="text-center p-5 text-red-600"><h3>Error Loading Page</h3><p>${error.message}</p></div>`;
          }
     }
@@ -98,12 +104,10 @@ export function navigateTo(pageId, params = {}) {
         const searchParams = new URLSearchParams(params);
         hash += `?${searchParams.toString()}`;
     }
-    // Only change hash if it's different to prevent unnecessary reloads
     if (hash !== window.location.hash) {
         window.location.hash = hash;
     } else {
-        // If hash is the same, manually reload the page logic
-        loadPage(hash);
+        loadPage(hash.split('?')[0] || '#home'); // Use cleaned hash for reload
     }
 }
 window.navigateTo = navigateTo;
@@ -124,8 +128,7 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function updateLocationText(text) {
-    // This function relies on the element being present in the currently loaded HTML
-    requestAnimationFrame(() => { // Wait for potential DOM update
+    requestAnimationFrame(() => {
         const locationTextEl = document.getElementById('current-location-text');
         if (locationTextEl) {
             locationTextEl.textContent = text;
@@ -153,11 +156,11 @@ async function fetchAddressFromCoords(lat, lng) {
         console.error("Reverse geocoding failed:", error);
         userLocationText = "Could not fetch address.";
     }
-    updateLocationText(userLocationText); // Update UI after fetch
+    updateLocationText(userLocationText);
 }
 
 async function getUserLocation() {
-    userLocationText = "Fetching location..."; // Initial text
+    userLocationText = "Fetching location...";
     updateLocationText(userLocationText);
 
     if (navigator.geolocation) {
@@ -170,8 +173,7 @@ async function getUserLocation() {
                 updateLocationText(userLocationText);
                 await fetchAddressFromCoords(lat, lng);
 
-                // Reload current page if it's home or stores (to update distances)
-                const currentHash = window.location.hash || '#home';
+                const currentHash = (window.location.hash || '#home').split('?')[0];
                 if (currentHash === '#home' || currentHash === '#stores') {
                      loadPage(currentHash);
                 }
@@ -180,7 +182,7 @@ async function getUserLocation() {
                 userLocation = { lat: 28.6139, lng: 77.2090 }; // Fallback
                 userLocationText = "Location access denied.";
                 updateLocationText(userLocationText);
-                const currentHash = window.location.hash || '#home';
+                const currentHash = (window.location.hash || '#home').split('?')[0];
                  if (currentHash === '#home' || currentHash === '#stores') {
                     loadPage(currentHash);
                  }
@@ -190,7 +192,7 @@ async function getUserLocation() {
         userLocation = { lat: 28.6139, lng: 77.2090 }; // Fallback
         userLocationText = "Geolocation not supported.";
         updateLocationText(userLocationText);
-        const currentHash = window.location.hash || '#home';
+        const currentHash = (window.location.hash || '#home').split('?')[0];
          if (currentHash === '#home' || currentHash === '#stores') {
             loadPage(currentHash);
          }
@@ -200,7 +202,7 @@ async function getUserLocation() {
 
 // --- Auth State Listener ---
 onAuthStateChanged(auth, async (user) => {
-    const previousUser = currentUser; // Store previous state
+    const previousUser = currentUser;
     if (user) {
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
@@ -215,38 +217,29 @@ onAuthStateChanged(auth, async (user) => {
                 currentUser = { uid: user.uid, ...newUserDoc };
             } catch (dbError) {
                 console.error("Error creating user document:", dbError);
-                currentUser = null; // Fallback if DB write fails
+                currentUser = null;
             }
         }
     } else {
         currentUser = null;
     }
 
-    // --- Reload or Redirect Logic ---
-    const activePageId = window.location.hash || '#home';
+    const activePageId = (window.location.hash || '#home').split('?')[0];
     const protectedPages = ['#order-history', '#profile', '#order-request', '#manage-addresses'];
 
-    // If user logs out while on a protected page, redirect to home
     if (!currentUser && protectedPages.includes(activePageId)) {
         navigateTo('home');
     }
-    // If user logs in/out and is on profile page, reload profile page
     else if (activePageId === '#profile' && previousUser !== currentUser) {
          loadPage('#profile');
     }
-    // Optional: Reload other pages if needed after login/logout
-    // else if ((previousUser && !currentUser) || (!previousUser && currentUser)) {
-    //     // Reload current page maybe?
-    //     loadPage(activePageId);
-    // }
 });
 
 
 // --- App Initialization (Event Listeners) ---
 window.addEventListener('hashchange', () => {
-    // Extract hash without parameters for loading page logic
-    const hash = window.location.hash.split('?')[0] || '#home';
-    loadPage(hash); // Use the cleaned hash
+    const hash = (window.location.hash || '#home').split('?')[0];
+    loadPage(hash);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -258,10 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    getUserLocation(); // Start location fetching
+    getUserLocation();
 
-    // Initial page load based on current hash
-    const initialHash = window.location.hash.split('?')[0] || '#home';
-    loadPage(initialHash); // Use the cleaned hash
+    const initialHash = (window.location.hash || '#home').split('?')[0];
+    loadPage(initialHash);
 });
-
