@@ -19,7 +19,7 @@ let currentParams = {};
 
 // --- Page Routes ---
 const routes = {
-    '#home':           { file: 'pages/home.html',          title: 'Home',          script: 'js/pages/home.js' },
+    '#home':           { file: 'pages/home.html',          title: 'Home',          script: 'pages/home.js' },
     '#stores':         { file: 'pages/stores.html',        title: 'Stores',        script: 'Js/pages/store.js' }, // Ensure this points to store.js
     '#store-details':  { file: 'pages/store-details.html', title: 'Store Details', script: 'Js/pages/store.js' }, // This also points to store.js
     '#order-history':  { file: 'pages/order-history.html', title: 'My Orders',     script: 'Js/pages/order-history.js' },
