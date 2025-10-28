@@ -47,8 +47,9 @@ async function loadPage(hash) {
     document.title = `${route.title} - Drywash`;
 
     try {
-        const response = await fetch(route.file);
-        if (!response.ok) throw new Error(`Page not found: ${route.file}`);
+        // Fetch HTML using a relative path from index.html's location
+        const response = await fetch(`./${route.file}`); // Use relative path for HTML
+        if (!response.ok) throw new Error(`Page HTML not found: ${route.file}`);
         const html = await response.text();
 
         if (contentArea) {
@@ -59,10 +60,13 @@ async function loadPage(hash) {
         }
 
         if (route.script) {
-            // --- YAHAN BADLAAV KIYA GAYA HAI ---
-            // Ab path sahi banega (e.g., ./Js/pages/home.js?v=...)
-            const modulePath = `./${route.script}?v=${new Date().getTime()}`;
+            // --- YEH BADLAAV HAI ---
+            // Import script using a path relative to the root '/'
+            const modulePath = `/${route.script}?v=${new Date().getTime()}`;
             // --- END BADLAAV ---
+
+            // Debugging log: Check the path being imported
+            console.log("Attempting to import module:", modulePath);
 
             try {
                 const module = await import(modulePath);
@@ -70,7 +74,6 @@ async function loadPage(hash) {
                     module.init(hash, currentParams);
                 }
             } catch (importError) {
-                 // Yahaan specific import error dikhayein
                  console.error(`Failed to import module: ${modulePath}`, importError);
                  if (contentArea) {
                      contentArea.innerHTML = `<div class="text-center p-5 text-red-600"><h3>Error Loading Page Script</h3><p>Could not load: ${route.script}</p><p>${importError.message}</p></div>`;
@@ -107,7 +110,7 @@ export function navigateTo(pageId, params = {}) {
     if (hash !== window.location.hash) {
         window.location.hash = hash;
     } else {
-        loadPage(hash.split('?')[0] || '#home'); // Use cleaned hash for reload
+        loadPage(hash.split('?')[0] || '#home');
     }
 }
 window.navigateTo = navigateTo;
