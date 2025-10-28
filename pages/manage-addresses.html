@@ -1,0 +1,32 @@
+<header class="sticky-header p-4 border-b border-slate-100 flex items-center">
+	<button class="mr-3 text-slate-600 text-xl" onclick="window.goBack()"><i class="fas fa-arrow-left"></i></button>
+	<h1 class="text-lg font-bold text-slate-800">Manage Address</h1>
+</header>
+<main class="p-4 bg-bg-light min-h-screen flex flex-col" id="manage-address-content">
+	
+	<div id="current-address-card" class="bg-white p-4 rounded-xl shadow-lg hidden mb-4">
+		<div class="flex justify-between items-center mb-2">
+			<h3 class="font-semibold text-slate-800 flex items-center gap-2">
+				<i class="fas fa-home text-primary-blue"></i> My Default Address
+			</h3>
+			<button id="edit-address-btn" class="text-sm text-primary-blue font-medium hover:underline">Edit</button>
+		</div>
+		<p id="current-address-text" class="text-sm text-slate-600 leading-relaxed break-words">
+			Loading...
+		</p>
+	</div>
+	
+	<div id="no-address-view" class="hidden flex-grow flex flex-col items-center justify-center text-center p-6">
+		
+		<svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-slate-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+			<path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+			<path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+		</svg>
+		<h2 class="text-xl font-semibold text-slate-700 mb-2">No Saved Address</h2>
+		<p class="text-sm text-slate-500 mb-6">You haven't added a default pickup address yet. Add one for faster checkouts!</p>
+		<button id="add-address-btn" class="bg-primary-blue text-white py-2.5 px-6 rounded-lg font-semibold shadow hover:shadow-md transition">
+			Add Address
+		</button>
+	</div>
+	
+</main>
