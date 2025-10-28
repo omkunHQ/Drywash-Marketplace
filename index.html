@@ -22,15 +22,17 @@
         }
       }
     </script>
-    
+
     <link rel="stylesheet" href="css/style.css">
 
 </head>
 <body class="pb-20 md:pb-0">
 
     <div id="app-container" class="max-w-4xl mx-auto bg-white md:bg-bg-light min-h-screen">
-        
-        <main id="page-content-wrapper"></main>
+
+        <main id="page-content-wrapper">
+            <div class="p-4 text-center text-slate-500">Loading...</div>
+        </main>
 
     </div> <nav class="fixed bottom-0 left-0 right-0 bg-white flex justify-around md:hidden bottom-nav z-40 border-t border-slate-100">
         <button data-page="home" class="text-center text-slate-500 active flex flex-col items-center flex-1 py-2">
@@ -50,15 +52,16 @@
             <span class="block text-[10px] font-semibold mt-1">Account</span>
         </button>
     </nav>
-    
+
     <div id="order-details-modal" class="fixed inset-0 z-50 hidden">
         <div id="modal-backdrop" class="absolute inset-0 bg-black/60"></div>
+
         <div class="relative z-10 bg-bg-light w-full max-w-4xl h-full mx-auto overflow-y-auto">
             <header class="sticky-header p-4 border-b border-slate-100 flex items-center">
                 <button id="modal-close-btn" class="mr-3 text-slate-600 text-xl"><i class="fas fa-times"></i></button>
                 <h1 class="text-lg font-bold text-slate-800">Order Details</h1>
             </header>
-            
+
             <main class="p-4 space-y-4" id="modal-content-area">
                 <div class="bg-white p-4 rounded-xl shadow-lg space-y-3">
                     <div>
@@ -75,17 +78,64 @@
                     </div>
                     <div>
                         <span class="block text-xs text-slate-500">Estimated Delivery</span>
-                        <span id="modal-order-delivery" class="font-semibold text-slate-700">2-3 Business Days</span>
+                        <span id="modal-order-delivery" class="font-semibold text-slate-700">Usually 2-3 Business Days</span>
                     </div>
                 </div>
-                
+
                 <div class="bg-white p-4 rounded-xl shadow-lg">
                     <h2 class="text-md font-semibold text-slate-700 mb-3">Items in this Order</h2>
                     <ul id="modal-order-items" class="space-y-3 text-sm">
                         <li class="h-4 w-1/2 skeleton-loader"></li>
                     </ul>
                 </div>
-                              
+
+                <div class="bg-white p-4 rounded-xl shadow-lg">
+                    <h2 class="text-md font-semibold text-slate-700 mb-4">Order Progress</h2>
+                    <ul class="space-y-4" id="order-status-timeline">
+                        <li class="flex items-start status-step" data-status="PICKUP_DONE">
+                            <div class="status-icon w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                                <i class="fas fa-check text-xs text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-500 status-title">Pickup Completed</h4>
+                                <p class="text-xs text-slate-400 status-time">Waiting...</p>
+                            </div>
+                        </li>
+                        <div class="ml-2.5 h-4 border-l-2 border-dotted border-slate-300 status-connector hidden"></div>
+
+                        <li class="flex items-start status-step" data-status="PROCESSING">
+                             <div class="status-icon w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                                <i class="fas fa-check text-xs text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-500 status-title">Processing</h4>
+                                <p class="text-xs text-slate-400 status-time">Waiting...</p>
+                            </div>
+                        </li>
+                        <div class="ml-2.5 h-4 border-l-2 border-dotted border-slate-300 status-connector hidden"></div>
+
+                        <li class="flex items-start status-step" data-status="READY">
+                             <div class="status-icon w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                                <i class="fas fa-check text-xs text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-500 status-title">Ready for Delivery</h4>
+                                <p class="text-xs text-slate-400 status-time">Waiting...</p>
+                            </div>
+                        </li>
+                        <div class="ml-2.5 h-4 border-l-2 border-dotted border-slate-300 status-connector hidden"></div>
+
+                        <li class="flex items-start status-step" data-status="DELIVERED">
+                             <div class="status-icon w-6 h-6 rounded-full border-2 border-slate-300 flex items-center justify-center mr-3 mt-1 flex-shrink-0">
+                                <i class="fas fa-check text-xs text-white"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-sm text-slate-500 status-title">Delivered</h4>
+                                <p class="text-xs text-slate-400 status-time">Waiting...</p>
+                            </div>
+                        </li>
+                        </ul>
+                </div>
 
                 <div id="modal-rating-box" class="bg-white p-4 rounded-xl shadow-lg hidden">
                     <h2 class="text-md font-semibold text-slate-700 mb-3">Rate this Store</h2>
@@ -100,15 +150,8 @@
                         Submit Rating
                     </button>
                 </div>
-                
-            </main>
-        </div>
-    </div>
-    
-    <script src="./Firebase-Configuration.js" type="module"></script>
-    <script src="./js/main.js" type="module"></script>
 
-    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
+            </main> </div> </div> <script src="./Firebase-Configuration.js" type="module"></script>
+    <script src="./js/main.js" type="module"></script>
 </body>
-  </html>
+</html>
