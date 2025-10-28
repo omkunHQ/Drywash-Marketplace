@@ -1,5 +1,5 @@
 /* js/main.js
- * User App router
+ * User App router with Auth Check Fix
  */
 
 // Firebase services
@@ -14,8 +14,17 @@ const allNavLinks = document.querySelectorAll('.bottom-nav button');
 // --- Global App State ---
 export let currentUser = null;
 export let userLocation = null;
-export let userLocationText = "Loading location..."; // Default Text
+export let userLocationText = "Loading location...";
 let currentParams = {};
+let initialAuthCheckComplete = false; // <-- BADLAAV: Flag to track initial check
+let authCheckPromiseResolver = null; // <-- BADLAAV: Resolver for the promise
+
+// --- BADLAAV: Promise jo initial auth check ka wait karega ---
+const waitForAuthCheck = new Promise(resolve => {
+    authCheckPromiseResolver = resolve; // Store the resolve function
+});
+// --- END BADLAAV ---
+
 
 // --- Page Routes ---
 const routes = {
@@ -33,69 +42,71 @@ const routes = {
  * MAIN ROUTER FUNCTION
  */
 async function loadPage(hash) {
-    // Hash se parameters alag karein (e.g., #store-details?storeId=XYZ -> #store-details)
     const routeKey = hash.split('?')[0] || '#home';
-    const route = routes[routeKey] || routes['#home']; // Default route #home
+    const route = routes[routeKey] || routes['#home'];
 
-    // Check if main content area exists
-    if (!contentArea) {
-        console.error("Fatal Error: #page-content-wrapper not found in index.html! Cannot load pages.");
-        // Optionally display an error message to the user, though the page structure is broken
-        document.body.innerHTML = '<p style="color: red; padding: 20px;"><b>Application Error:</b> Core page container is missing. Please check index.html.</p>';
-        return; // Stop execution if the main container is missing
+    // --- BADLAAV: Wait for initial auth check BEFORE loading protected pages ---
+    if (route.protected && !initialAuthCheckComplete) {
+        console.log(`Waiting for auth check before loading protected route: ${routeKey}`);
+        await waitForAuthCheck; // Yahaan wait karega
+        console.log("Auth check complete. Proceeding...");
+        // Re-check currentUser after waiting
+        if (!currentUser) {
+            console.log(`User not authenticated after wait. Redirecting ${routeKey} to profile.`);
+            navigateTo('profile'); // Agar wait ke baad bhi login nahi hai, toh profile bhejein
+            return; // Page load karna band karein
+        }
+    } else if (route.protected && !currentUser) {
+         // Agar check ho chuka hai lekin user logged out hai
+         console.log(`User not authenticated. Redirecting protected route ${routeKey} to profile.`);
+         navigateTo('profile');
+         return;
     }
-    contentArea.innerHTML = `<div class="p-4 text-center text-slate-500">Loading...</div>`;
+    // --- END BADLAAV ---
 
+
+    if (contentArea) {
+        contentArea.innerHTML = `<div class="p-4 text-center text-slate-500">Loading ${route.title}...</div>`;
+    } else {
+        console.error("Fatal Error: #page-content-wrapper not found!");
+        return;
+    }
 
     updateActiveLinks(routeKey);
     document.title = `${route.title} - Drywash`;
 
     try {
-        // Fetch HTML using a path relative to index.html's location
-        const response = await fetch(`./${route.file}`); // e.g., ./pages/home.html
-        if (!response.ok) throw new Error(`Page HTML not found: ${route.file} (Status: ${response.status})`);
+        const response = await fetch(`./${route.file}`); // Relative path for HTML
+        if (!response.ok) throw new Error(`Page HTML not found: ${route.file}`);
         const html = await response.text();
 
-        // Check again if contentArea exists before inserting HTML
         if (contentArea) {
             contentArea.innerHTML = html;
         } else {
-             console.error("Fatal Error: #page-content-wrapper disappeared while loading content.");
+             console.error("Fatal Error: #page-content-wrapper disappeared.");
              return;
         }
 
-
-        // Load and execute page-specific JavaScript if defined
         if (route.script) {
-            // **Corrected Path:** Build path relative to the root '/'
-            const modulePath = `/${route.script}?v=${new Date().getTime()}`; // e.g., /Js/pages/home.js?v=...
-
-            console.log("Attempting to import module:", modulePath); // Debug log
-
+            const modulePath = `/${route.script}?v=${new Date().getTime()}`; // Root-relative path for JS
+            console.log("Attempting to import module:", modulePath);
             try {
                 const module = await import(modulePath);
                 if (module && typeof module.init === 'function') {
-                    // Pass the original hash (with params) and the saved params object
-                    console.log(`Calling init for ${routeKey} with hash: ${hash} and currentParams:`, JSON.stringify(currentParams)); // Debug log
+                    console.log(`Calling init for ${routeKey}`);
                     module.init(hash, currentParams);
                 } else {
-                     console.warn(`Module loaded for ${route.script}, but init function not found or not exported.`);
+                     console.warn(`Module loaded for ${route.script}, but init function not found.`);
                 }
             } catch (importError) {
                  console.error(`Failed to import module: ${modulePath}`, importError);
-                 if (contentArea) {
-                     contentArea.innerHTML = `<div class="text-center p-5 text-red-600"><h3>Error Loading Page Script</h3><p>Could not load: ${route.script}</p><p>${importError.message}</p></div>`;
-                 }
+                 if (contentArea) contentArea.innerHTML = `<div class="text-center p-5 text-red-600"><h3>Error Loading Script</h3><p>${importError.message}</p></div>`;
             }
-        } else {
-             console.log(`No script defined for route: ${routeKey}`); // Debug log for routes without scripts
         }
 
     } catch (error) {
         console.error('Error loading page HTML:', error);
-         if (contentArea) {
-            contentArea.innerHTML = `<div class="text-center p-5 text-red-600"><h3>Error Loading Page</h3><p>${error.message}</p></div>`;
-         }
+         if (contentArea) contentArea.innerHTML = `<div class="text-center p-5 text-red-600"><h3>Error Loading Page</h3><p>${error.message}</p></div>`;
     }
 }
 
@@ -104,41 +115,119 @@ async function loadPage(hash) {
 function updateActiveLinks(routeKey) {
     const pageId = routeKey.substring(1);
     allNavLinks.forEach(link => {
-        const linkPageId = link.dataset.page;
-        link.classList.toggle('active', linkPageId === pageId);
+        link.classList.toggle('active', link.dataset.page === pageId);
     });
 }
 
 export function navigateTo(pageId, params = {}) {
-    // --- LOG 1: Check parameters received ---
-    console.log(`navigateTo called for page: ${pageId}, with params:`, JSON.stringify(params));
-
-    currentParams = params; // Store params globally
+    console.log(`MapsTo called for page: ${pageId}, with params:`, JSON.stringify(params));
+    currentParams = params;
     let hash = `#${pageId}`;
-
-    // Append parameters to hash for bookmarking/refresh
     if (params && Object.keys(params).length > 0) {
-        const searchParams = new URLSearchParams(params);
-        hash += `?${searchParams.toString()}`; // e.g., #store-details?storeId=XYZ
+        hash += `?${new URLSearchParams(params).toString()}`;
     }
-
-    // --- LOG 2: Check the final hash being set ---
     console.log(`Setting window.location.hash to: ${hash}`);
-
     if (hash !== window.location.hash) {
-        window.location.hash = hash; // Trigger hashchange event
+        window.location.hash = hash;
     } else {
-        // If hash is the same, manually reload the page logic using the cleaned hash
         console.log("Hash is the same, manually calling loadPage for:", hash.split('?')[0] || '#home');
         loadPage(hash.split('?')[0] || '#home');
     }
 }
-// Make navigateTo globally accessible for inline HTML onclick attributes
 window.navigateTo = navigateTo;
 window.goBack = () => window.history.back();
 
 
 // --- Location Helper Functions ---
+export function calculateDistance(lat1, lon1, lat2, lon2) { /* ... (calculateDistance code same) ... */ }
+function updateLocationText(text) { /* ... (updateLocationText code same) ... */ }
+async function fetchAddressFromCoords(lat, lng) { /* ... (fetchAddressFromCoords code same) ... */ }
+async function getUserLocation() { /* ... (getUserLocation code same) ... */ }
+
+
+// --- Auth State Listener ---
+onAuthStateChanged(auth, async (user) => {
+    const previousUser = currentUser;
+    console.log("Auth state changed. Checking user...");
+    if (user) {
+        const userRef = doc(db, "users", user.uid);
+        try {
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                currentUser = { uid: user.uid, ...userSnap.data() };
+            } else {
+                console.warn("User document not found, creating one...");
+                const newUserDoc = { /* ... (newUserDoc data) ... */ };
+                await setDoc(userRef, newUserDoc);
+                currentUser = { uid: user.uid, ...newUserDoc };
+            }
+             console.log("User authenticated:", currentUser?.email);
+        } catch (dbError) {
+             console.error("Error accessing user document:", dbError);
+             currentUser = null;
+        }
+    } else {
+        currentUser = null;
+         console.log("User is logged out.");
+    }
+
+    // --- BADLAAV: Signal that the initial auth check is complete ---
+    if (!initialAuthCheckComplete) {
+        initialAuthCheckComplete = true;
+        if (authCheckPromiseResolver) {
+            authCheckPromiseResolver(); // Resolve the promise
+             console.log("Initial authentication check complete.");
+        }
+    }
+    // --- END BADLAAV ---
+
+
+    // --- Reload or Redirect Logic (Remains mostly the same) ---
+    const activePageKey = (window.location.hash || '#home').split('?')[0];
+
+    // If user logs out while on a protected page, redirect NOW
+    if (!currentUser && routes[activePageKey]?.protected) {
+        console.log(`User logged out on protected page (${activePageKey}). Redirecting to profile.`);
+        navigateTo('profile'); // Redirect to profile/login page
+    }
+    // If user state changes and they are on the profile page, reload it
+    else if (activePageKey === '#profile' && previousUser !== currentUser) {
+         console.log(`User state changed on profile page. Reloading profile.`);
+         loadPage('#profile');
+    }
+});
+
+
+// --- App Initialization (Event Listeners) ---
+window.addEventListener('hashchange', () => {
+    const hash = (window.location.hash || '#home').split('?')[0]; // Clean hash
+    console.log("hashchange event detected. Loading page for:", hash);
+    loadPage(hash); // Call loadPage on hash change
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOMContentLoaded event. Initializing app...");
+    allNavLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pageId = link.dataset.page;
+             console.log(`Bottom nav clicked: ${pageId}`);
+            navigateTo(pageId);
+        });
+    });
+
+    getUserLocation(); // Start location fetching
+
+    // Initial page load based on the current URL hash
+    // The loadPage function itself will now wait for auth if needed
+    const initialHash = (window.location.hash || '#home').split('?')[0];
+    console.log("Initial page load for hash:", initialHash);
+    loadPage(initialHash);
+});
+
+// --- Baaki ke functions jaise calculateDistance, updateLocationText, etc. ko yahan paste karein ---
+// (Maine unhe upar comments mein chhod diya hai taaki code chhota dikhe, lekin aapko unhe yahaan rakhna hoga)
+
 export function calculateDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // km
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -152,8 +241,7 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
 }
 
 function updateLocationText(text) {
-    // Update text only if the element exists (relevant for home page)
-    requestAnimationFrame(() => { // Ensure DOM updates are safe
+    requestAnimationFrame(() => {
         const locationTextEl = document.getElementById('current-location-text');
         if (locationTextEl) {
             locationTextEl.textContent = text;
@@ -162,48 +250,40 @@ function updateLocationText(text) {
 }
 
 async function fetchAddressFromCoords(lat, lng) {
-    userLocationText = "Fetching address..."; // Update status immediately
+    userLocationText = "Fetching address...";
     updateLocationText(userLocationText);
     try {
-        // Use HTTPS for API call
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
         if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
         const data = await response.json();
-
         if (data && data.address) {
-            // Extract relevant address parts
             const city = data.address.city || data.address.town || data.address.village || data.address.suburb || "";
             const state = data.address.state || "";
             let formattedAddress = city;
             if (state && city) formattedAddress = `${city}, ${state}`;
             else if (state) formattedAddress = state;
-            // Use address display name as fallback if city/state not found
             userLocationText = formattedAddress || data.display_name || "Address details not found.";
         } else {
-             userLocationText = data.display_name || "Address format unknown."; // Fallback to display_name
+             userLocationText = data.display_name || "Address format unknown.";
         }
     } catch (error) {
         console.error("Reverse geocoding failed:", error);
         userLocationText = "Could not fetch address.";
     }
-    updateLocationText(userLocationText); // Update UI with result or error
+    updateLocationText(userLocationText);
 }
 
 async function getUserLocation() {
     userLocationText = "Fetching location...";
     updateLocationText(userLocationText);
-
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            // Success callback
             async (position) => {
                 const lat = position.coords.latitude;
                 const lng = position.coords.longitude;
                 console.log(`Location obtained: Lat ${lat}, Lng ${lng}`);
                 userLocation = { lat: lat, lng: lng };
-                await fetchAddressFromCoords(lat, lng); // Fetch address after getting coords
-
-                // Reload current page if it's home or stores (to update distances)
+                await fetchAddressFromCoords(lat, lng);
                 const currentHash = (window.location.hash || '#home').split('?')[0];
                 if (currentHash === '#home' || currentHash === '#stores') {
                      console.log("Reloading page after location update:", currentHash);
