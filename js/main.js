@@ -25,7 +25,7 @@ const routes = {
     '#order-history':  { file: 'pages/order-history.html', title: 'My Orders',     script: 'js/pages/order-history.js' },
     '#profile':        { file: 'pages/profile.html',       title: 'My Account',    script: 'js/pages/profile.js' },
     '#order-request':  { file: 'pages/order-request.html', title: 'Place Request', script: 'js/pages/order-request.js' },
-    '#manage-addresses': { file: 'pages/manage-addresses.html', title: 'My Addresses', script: 'js/pages/manage-address.js' },
+    '#manage-addresses': { file: 'pages/manage-addresses.html', title: 'My Addresses', script: 'js/pages/manage-addresses.js' },
     '#help':           { file: 'pages/help.html',          title: 'Help',          script: null }
 };
 
