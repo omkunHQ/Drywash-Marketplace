@@ -1,0 +1,36 @@
+/* Google Font Import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+body { 
+    font-family: 'Inter', sans-serif; 
+    background-color: #f1f5f9; /* bg-light ka fallback */
+}
+
+/* Page wrapper ab 'block' hai, 'none' nahi */
+.page { 
+    display: block; 
+}
+
+.sticky-header { 
+    position: sticky; 
+    top: 0; 
+    z-index: 40; 
+    background-color: white; 
+}
+
+/* Skeleton Loader Animation */
+.skeleton-loader {
+    background-color: #e2e8f0; /* slate-200 */
+    border-radius: 0.25rem;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Bottom Nav Active State */
+.bottom-nav button.active {
+    color: #F97316; /* secondary-orange */
+}
