@@ -1,0 +1,37 @@
+<header class="bg-white p-4 sticky top-0 z-10 border-b border-slate-100">
+    <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+            <img src="https://placehold.co/40x40/ea580c/white?text=DW" alt="Drywash Logo" class="h-10 w-10 rounded-lg">
+            <span class="text-2xl font-extrabold text-slate-800 tracking-tight">Drywash</span>
+        </div>
+        <button class="text-slate-500 hover:text-orange-600 text-2xl" onclick="window.navigateTo('profile')"><i class="fas fa-user-circle"></i></button>
+    </div>
+    <div class="flex items-center gap-1.5 mb-3">
+        <i class="fas fa-location-dot text-secondary-orange text-xs"></i>
+        <span id="current-location-text" class="text-xs font-medium text-slate-600">Loading location...</span>
+    </div>
+    <div class="relative">
+        <button onclick="window.navigateTo('stores')" class="w-full bg-slate-100 border border-slate-200 rounded-lg py-3 px-4 pl-10 text-sm text-left text-slate-500">
+            <i class="fas fa-search absolute left-3.5 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+            Search laundry or services...
+        </button>
+    </div>
+</header>
+<main class="p-4 space-y-6 bg-slate-100">
+    <div class="bg-gradient-to-r from-orange-500 to-amber-500 p-5 rounded-xl shadow-lg text-white">
+        <h2 class="font-bold text-lg mb-1">Weekly Special!</h2>
+        <p class="text-xs">Flat 15% off on all Blanket Dry Cleaning.</p>
+    </div>
+    <div class="grid grid-cols-4 gap-3 text-center">
+        <button class="flex flex-col items-center p-2 py-3 bg-white rounded-xl shadow-sm hover:shadow-md transition"> <span class="text-3xl mb-1.5 text-secondary-orange">&#x1F9FA;</span> <span class="text-[11px] font-semibold text-slate-600 leading-tight">Wash & Fold</span> </button>
+        <button class="flex flex-col items-center p-2 py-3 bg-white rounded-xl shadow-sm hover:shadow-md transition"> <span class="text-3xl mb-1.5 text-secondary-orange">&#x1F454;</span> <span class="text-[11px] font-semibold text-slate-600 leading-tight">Ironing</span> </button>
+        <button class="flex flex-col items-center p-2 py-3 bg-white rounded-xl shadow-sm hover:shadow-md transition"> <span class="text-3xl mb-1.5 text-secondary-orange">&#x2728;</span> <span class="text-[11px] font-semibold text-slate-600 leading-tight">Dry Clean</span> </button>
+        <button class="flex flex-col items-center p-2 py-3 bg-white rounded-xl shadow-sm hover:shadow-md transition"> <span class="text-3xl mb-1.5 text-secondary-orange">&#x1F45F;</span> <span class="text-[11px] font-semibold text-slate-600 leading-tight">Shoe Care</span> </button>
+    </div>
+    <h2 class="text-xl font-bold text-slate-800 pt-2">Recommended Stores</h2>
+    <div class="space-y-4" id="home-store-list">
+        <div id="home-store-loader" class="space-y-4">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden"> <div class="h-[150px] skeleton-loader"></div> <div class="p-4 space-y-2"> <div class="h-4 w-3/4 skeleton-loader"></div> <div class="h-3 w-1/2 skeleton-loader"></div> </div> </div>
+        </div>
+    </div>
+</main>

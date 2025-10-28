@@ -1,0 +1,37 @@
+<header class="sticky-header p-4 flex items-center bg-transparent absolute top-0 left-0 right-0 z-10">
+    <button class="mr-3 text-white bg-black bg-opacity-40 rounded-full h-8 w-8 flex items-center justify-center shadow-md" onclick="window.goBack()">
+        <i class="fas fa-arrow-left"></i>
+    </button>
+</header>
+<main class="pb-24 bg-bg-light">
+    <img src="https://placehold.co/600x250/1B4BAD/white?text=Store+Image" alt="Store Banner" class="w-full h-52 object-cover" id="store-detail-image">
+    
+    <div class="p-4 space-y-4 -mt-8 relative z-0">
+        <div class="bg-white p-4 rounded-xl shadow-lg">
+            <h1 id="store-details-name" class="text-xl font-bold text-slate-800 mb-1">Store Loading...</h1>
+            <p class="text-sm text-slate-500 mb-2" id="store-details-services-short">Services: Loading...</p>
+            <div class="flex items-center text-sm mb-2">
+                <i class="fas fa-star text-yellow-400 mr-1"></i> <span id="store-details-rating" class="font-semibold text-slate-700">...</span>
+                <span class="mx-2 text-slate-300">|</span>
+                <i class="fas fa-location-dot text-slate-400 mr-1"></i> <span id="store-details-distance">...</span>
+            </div>
+            <p class="text-xs text-green-600 font-medium" id="store-details-hours">Loading...</p>
+        </div>
+        
+        <div class="bg-white p-4 rounded-xl shadow-lg">
+            <h2 class="text-md font-semibold text-slate-700 mb-3">Services & Pricing</h2>
+            <ul class="space-y-3 text-sm" id="store-service-list">
+                <li class="flex justify-between items-center border-b pb-2">
+                    <span class="h-4 w-1/2 skeleton-loader"></span>
+                    <span class="h-4 w-1/4 skeleton-loader"></span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</main>
+
+<div class="fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-slate-200 max-w-4xl mx-auto md:bottom-0 z-30">
+    <button id="place-request-btn" class="w-full bg-primary-blue text-white py-3 px-4 rounded-lg font-bold">
+        Place Pickup Request
+    </button>
+</div>

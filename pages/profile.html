@@ -1,0 +1,76 @@
+<header class="sticky-header p-4 border-b border-slate-100">
+    <h1 class="text-lg font-bold text-slate-800 text-center">My Account</h1>
+</header>
+<main class="p-4 space-y-5 bg-bg-light min-h-screen">
+    
+    <div class="bg-white p-4 rounded-xl shadow-lg flex items-center gap-4">
+        <img id="profile-pic" src="https://placehold.co/64x64/cccccc/333333?text=User" alt="Avatar" class="w-16 h-16 rounded-full">
+        <div>
+            <h2 class="font-semibold text-lg text-slate-800" id="profile-name">Guest User</h2>
+            <p class="text-sm text-slate-500" id="profile-email">Please log in</p>
+        </div>
+    </div>
+
+    <div id="profile-details-container" class="hidden">
+        <form id="profile-update-form" class="bg-white p-4 rounded-xl shadow-lg space-y-4">
+            <h3 class="text-md font-semibold text-slate-700">Update Profile</h3>
+            
+            <div>
+                <label for="profile-name-input" class="block text-xs font-medium text-slate-500 mb-1">Full Name *</label>
+                <input type="text" id="profile-name-input" placeholder="Your full name" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+            </div>
+            
+            <div>
+                <label for="profile-mobile" class="block text-xs font-medium text-slate-500 mb-1">Mobile Number *</label>
+                <input type="tel" id="profile-mobile" placeholder="Your 10-digit mobile number" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+            </div>
+             <div>
+                <label for="profile-address" class="block text-xs font-medium text-slate-500 mb-1">Full Address *</label>
+                <textarea id="profile-address" rows="3" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="Enter your full address for pickup"></textarea>
+            </div>
+            <button type="submit" id="profile-update-btn" class="w-full bg-primary-blue text-white py-2.5 rounded-lg font-semibold">
+                Save Details
+            </button>
+        </form>
+    </div>
+    
+    <div id="auth-container">
+        <div id="auth-form-card" class="bg-white p-4 rounded-xl shadow-lg space-y-4">
+            <h3 id="auth-title" class="text-xl font-bold text-slate-800 text-center">Create Account</h3>
+            
+            <form id="email-auth-form" class="space-y-3">
+                <div>
+                    <input type="email" id="auth-email" placeholder="Email Address" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <div>
+                    <input type="password" id="auth-password" placeholder="Password (min 6 chars)" required class="w-full border border-slate-300 rounded-lg p-2.5 text-sm">
+                </div>
+                <button type="submit" id="main-auth-btn" class="w-full bg-primary-blue text-white py-2.5 rounded-lg font-semibold">Sign Up</button>
+            </form>
+            
+            <p class="text-center text-xs text-slate-500">OR</p>
+    
+            <button id="google-login-btn" class="w-full bg-red-600 text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2">
+                <i class="fab fa-google"></i> Continue with Google
+            </button>
+    
+            <button id="toggle-auth-mode" class="w-full text-center text-sm text-primary-blue">Already have an account? Sign In</button>
+    
+        </div>
+    
+        <button id="logout-btn" class="w-full bg-white text-red-600 py-3 px-4 rounded-xl font-semibold border border-slate-200 shadow-sm hidden mt-4">
+            Logout
+        </button>
+    </div>
+    
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden"> 
+        <button onclick="window.navigateTo('manage-addresses')" class="w-full text-left p-4 border-b border-slate-100 flex justify-between items-center text-slate-700"> 
+            <span class="font-medium flex items-center gap-3"><i class="fas fa-map-marker-alt w-4 text-center text-slate-400"></i> Manage Addresses</span> 
+            <i class="fas fa-chevron-right text-sm text-slate-400"></i> 
+        </button>
+        <button onclick="window.navigateTo('help')" class="w-full text-left p-4 hover:bg-slate-50 flex justify-between items-center text-slate-700"> 
+            <span class="font-medium flex items-center gap-3"><i class="fas fa-headset w-4 text-center text-slate-400"></i> Help & Support</span> 
+            <i class="fas fa-chevron-right text-sm text-slate-400"></i> 
+        </button> 
+    </div>
+</main>
