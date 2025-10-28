@@ -264,3 +264,4 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialHash = window.location.hash.split('?')[0] || '#home';
     loadPage(initialHash); // Use the cleaned hash
 });
+
