@@ -1,6 +1,7 @@
 import { db } from '../../Firebase-Configuration.js';
 import { collection, query, where, getDocs, orderBy, updateDoc, doc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { currentUser } from '../main.js';
+// currentUser यहाँ import नहीं करना है, यह init parameter से मिलेगा
+import { navigateTo } from '../main.js'; // navigateTo redirect के लिए ज़रूरी है
 
 // --- Global variables for modal elements (defined in index.html) ---
 let modal = null;
@@ -20,7 +21,7 @@ let currentSelectedRating = 0;
 let currentOrderToRate = null; // Stores the ID of the order being rated
 
 // --- Main Init Function (Router calls this) ---
-export function init(hash, params) {
+export function init(hash, params, user) { // <-- Added 'user' parameter
     // Use requestAnimationFrame to ensure modal elements from index.html are ready
      requestAnimationFrame(() => {
         // Find modal elements only once when the page loads
@@ -39,6 +40,7 @@ export function init(hash, params) {
         // Basic check if core modal elements exist
         if (!modal || !modalCloseBtn || !modalBackdrop || !modalRatingBox || !submitRatingBtn || !starRatingInput) {
             console.error("Order details modal elements NOT FOUND in index.html! Rating/Details might not work.");
+            // Proceed without modal functionality or show a persistent error
         } else {
              // Setup modal close listeners (only if elements exist)
              modalCloseBtn.onclick = hideOrderDetails;
@@ -46,13 +48,13 @@ export function init(hash, params) {
              submitRatingBtn.onclick = submitRating; // Rating submit listener
         }
 
-        // Now load the actual order history list
-        _initOrderHistory();
+        // Now load the actual order history list, passing the user object
+        _initOrderHistory(user); // <-- Pass user object here
      });
 }
 
 // --- Internal Page Logic: Fetches and displays history ---
-async function _initOrderHistory() {
+async function _initOrderHistory(user) { // <-- Added 'user' parameter
     console.log("Running _initOrderHistory...");
     // Get list elements from order-history.html
     const historyListContainer = document.getElementById('order-history-list');
@@ -73,22 +75,22 @@ async function _initOrderHistory() {
     historyListContainer.innerHTML = ''; // Clear previous content
     noOrdersView.classList.add('hidden'); // Empty view hidden initially
 
-    // Check if user is logged in
-    if (!currentUser) {
-        console.log("User not logged in. Showing empty state with login prompt.");
-        loader.style.display = 'none'; // Hide loader
+    // Check if user object was passed correctly
+    if (!user || !user.uid) { // Check the passed user object and its uid
+        console.log("User object not valid or missing uid in _initOrderHistory. Showing login prompt.");
+        loader.style.display = 'none';
         // Modify and show the empty state view for login
-        noOrdersView.querySelector('h2').textContent = "Please Log In";
-        noOrdersView.querySelector('p').textContent = "Log in to view your order history.";
-        const browseBtn = noOrdersView.querySelector('button');
-        if(browseBtn) {
-            browseBtn.textContent = "Log In / Sign Up";
-            browseBtn.onclick = () => navigateTo('profile');
-        }
-        noOrdersView.classList.remove('hidden'); // Show modified empty view
+         noOrdersView.querySelector('h2').textContent = "Please Log In";
+         noOrdersView.querySelector('p').textContent = "Log in to view your order history.";
+         const browseBtn = noOrdersView.querySelector('button');
+         if(browseBtn) {
+             browseBtn.textContent = "Log In / Sign Up";
+             browseBtn.onclick = () => navigateTo('profile'); // Ensure navigateTo is imported if used here
+         }
+         noOrdersView.classList.remove('hidden');
         return;
     }
-    console.log(`Fetching history for user: ${currentUser.uid}`);
+    console.log(`Fetching history for user: ${user.uid}`);
 
     try {
         let historyItems = [];
@@ -97,20 +99,23 @@ async function _initOrderHistory() {
         console.log("Fetching pickup requests...");
         const requestsQuery = query(
             collection(db, "pickup_requests"),
-            where("customerId", "==", currentUser.uid),
+            where("customerId", "==", user.uid), // Use user.uid
             orderBy("createdAt", "desc")
         );
         const requestsSnapshot = await getDocs(requestsQuery);
         requestsSnapshot.forEach((docRef) => {
             const data = docRef.data();
-            historyItems.push({
-                id: docRef.id,
-                type: 'request', // Mark as request
-                status: data.status, // e.g., Pending, In-Process, Order_Created
-                createdAt: data.createdAt, // Timestamp
-                pickupSlot: data.pickupSlot,
-                storeId: data.storeId
-            });
+            // Filter out requests that already have a corresponding order created (optional, avoids duplicates if needed)
+            // if (data.status !== 'ORDER_CREATED') { // Uncomment this line if you ONLY want to show pending requests
+                historyItems.push({
+                    id: docRef.id,
+                    type: 'request', // Mark as request
+                    status: data.status, // e.g., Pending, In-Process, Order_Created
+                    createdAt: data.createdAt, // Timestamp
+                    pickupSlot: data.pickupSlot,
+                    storeId: data.storeId
+                });
+            // }
         });
         console.log(`Found ${requestsSnapshot.size} pickup requests.`);
 
@@ -118,7 +123,7 @@ async function _initOrderHistory() {
         console.log("Fetching orders...");
         const ordersQuery = query(
             collection(db, "orders"),
-            where("customerId", "==", currentUser.uid),
+            where("customerId", "==", user.uid), // Use user.uid
             orderBy("createdAt", "desc")
         );
         const ordersSnapshot = await getDocs(ordersQuery);
@@ -144,10 +149,10 @@ async function _initOrderHistory() {
             // Handle potential null or non-Timestamp values gracefully
             const timeA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
             const timeB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
-             // Fallback to 0 if createdAt is missing, sort unknown dates to the bottom maybe? Or top? Let's try bottom.
-             if(timeA === 0 && timeB === 0) return 0;
+             // Fallback for missing timestamps
+             if(timeA === 0 && timeB === 0) return 0; // Keep original order if both missing
              if(timeA === 0) return 1; // Put items without date at the end
-             if(timeB === 0) return -1;
+             if(timeB === 0) return -1; // Keep items with dates first
             return timeB - timeA; // Descending order (newest first)
         });
 
@@ -162,7 +167,7 @@ async function _initOrderHistory() {
             const browseBtn = noOrdersView.querySelector('button');
              if(browseBtn) {
                  browseBtn.textContent = "Browse Stores";
-                 browseBtn.onclick = () => navigateTo('stores');
+                 browseBtn.onclick = () => navigateTo('stores'); // Ensure navigateTo is imported
              }
             noOrdersView.classList.remove('hidden'); // Show the 'No History' view
             historyListContainer.classList.add('hidden'); // Keep list hidden
@@ -180,11 +185,12 @@ async function _initOrderHistory() {
     } catch (error) {
         console.error("Error fetching order history: ", error);
         loader.style.display = 'none';
+        // Display error message inside the list container
         historyListContainer.innerHTML = '<p class="text-red-500 font-bold text-center p-6">Error: Could not load order history.</p>';
         historyListContainer.classList.remove('hidden'); // Show error in list area
         noOrdersView.classList.add('hidden');
     }
-}
+} // End of _initOrderHistory
 
 /**
  * Creates an HTML card element for a history item (request or order).
@@ -201,12 +207,12 @@ function createHistoryCard(item) {
     const status = item.status || 'N/A';
     let statusColor = 'text-gray-600'; // Default
 
-    // Determine Status Color
+    // Determine Status Color (Covers both requests and orders)
     if (['DELIVERED', 'READY'].includes(status)) statusColor = 'text-green-600';
     else if (['CANCELLED'].includes(status)) statusColor = 'text-red-600';
-    else if (['PICKUP_DONE', 'IN-PROCESS'].includes(status)) statusColor = 'text-blue-600';
+    else if (['PICKUP_DONE', 'IN-PROCESS'].includes(status)) statusColor = 'text-blue-600'; // Combine processing states
     else if (['PROCESSING'].includes(status)) statusColor = 'text-purple-600';
-    else if (['PENDING', 'ORDER_CREATED'].includes(status)) statusColor = 'text-yellow-600';
+    else if (['PENDING', 'ORDER_CREATED'].includes(status)) statusColor = 'text-yellow-600'; // Combine pending/waiting states
 
     let title = '';
     let detailsHtml = '';
@@ -218,6 +224,7 @@ function createHistoryCard(item) {
         detailsHtml = `<p class="text-sm text-slate-500 mb-2">Slot: ${item.pickupSlot || 'N/A'}</p>`;
         // Requests are not clickable for details modal in this version
         isClickable = false;
+        itemCard.style.opacity = '0.7'; // Make requests look slightly different (optional)
     } else { // item.type === 'order'
         title = `Order ID: #${item.id.substring(0, 6)}`;
         detailsHtml = `<p class="text-sm text-slate-600 mb-2">Total: <span class="font-semibold">₹${item.total?.toFixed(2) ?? '0.00'}</span></p>`;
@@ -263,11 +270,12 @@ function createHistoryCard(item) {
 }
 
 
-// --- Modal Functions ---
+// --- Modal Functions (Interact with elements in index.html) ---
 
 function showOrderDetails(order, orderId) {
+     // Check if modal elements are available before proceeding
      if (!modal || !modalOrderId || !modalOrderTotal || !modalOrderStatus || !modalOrderItems || !modalRatingBox || !starRatingInput || !submitRatingBtn) {
-        console.error("Cannot show order details, modal elements missing.");
+        console.error("Cannot show order details, modal elements missing from index.html!");
         alert("Error: Could not load order details view.");
         return;
     }
@@ -311,7 +319,7 @@ function showOrderDetails(order, orderId) {
         modalOrderItems.innerHTML = '<li class="text-slate-500 text-sm">No items found for this order.</li>';
     }
 
-    // --- 3. Update Status Timeline ---
+    // --- 3. Update Status Timeline (Using Simplified 4 Steps) ---
     updateStatusTimeline(order.status); // Call the timeline update function
 
     // --- 4. Setup Rating Box ---
@@ -351,7 +359,7 @@ function updateStatusTimeline(currentStatus) {
     const steps = timeline.querySelectorAll('.status-step');
     const connectors = timeline.querySelectorAll('.status-connector');
 
-    // Define the simplified order of statuses
+    // Define the simplified order of statuses relevant for the timeline
     const statusOrder = ['PICKUP_DONE', 'PROCESSING', 'READY', 'DELIVERED'];
 
     // Map statuses to user-friendly time text
@@ -363,27 +371,25 @@ function updateStatusTimeline(currentStatus) {
     };
 
     let currentStatusFound = false;
-    let currentStatusIndex = statusOrder.indexOf(currentStatus);
+    let currentStatusIndex = statusOrder.indexOf(currentStatus); // Find index of current status
 
     steps.forEach((step, index) => {
-        const status = step.dataset.status;
+        const status = step.dataset.status; // Status this step represents
         const iconDiv = step.querySelector('.status-icon');
-        const checkIcon = iconDiv?.querySelector('i.fa-check'); // Use optional chaining
+        const checkIcon = iconDiv?.querySelector('i.fa-check');
         const title = step.querySelector('.status-title');
         const time = step.querySelector('.status-time');
         const connector = connectors.length > index ? connectors[index] : null;
 
-        // Ensure elements exist before modifying
         if (!iconDiv || !checkIcon || !title || !time) {
              console.warn(`Missing elements within status step: ${status}`);
              return; // Skip this step if elements are missing
         }
 
-
-        // Reset styles
+        // --- Reset styles ---
         iconDiv.classList.remove('bg-primary-blue', 'border-primary-blue');
         iconDiv.classList.add('border-slate-300');
-        // checkIcon.classList.add('hidden'); // Keep check hidden until logic below
+        // checkIcon.classList.add('hidden'); // Let's keep check always visible but control color via parent
         title.classList.remove('text-slate-800');
         title.classList.add('text-slate-500');
         time.textContent = 'Waiting...';
@@ -392,8 +398,10 @@ function updateStatusTimeline(currentStatus) {
             connector.classList.remove('border-primary-blue');
             connector.classList.add('border-slate-300');
         }
+        // --- End Reset ---
 
-        const statusIndex = statusOrder.indexOf(status);
+        const statusIndex = statusOrder.indexOf(status); // Find index of this step
+        // A step is considered completed if its index is less than the current status's index
         let isCompleted = currentStatusIndex >= 0 && statusIndex < currentStatusIndex;
         const isCurrent = status === currentStatus;
 
@@ -401,13 +409,13 @@ function updateStatusTimeline(currentStatus) {
         if (isCompleted || isCurrent) {
             iconDiv.classList.add('bg-primary-blue', 'border-primary-blue');
             iconDiv.classList.remove('border-slate-300');
-            // checkIcon.classList.remove('hidden');
+            // checkIcon.classList.remove('hidden'); // Show check
             title.classList.remove('text-slate-500');
             title.classList.add('text-slate-800');
             time.textContent = statusTimeText[status] || (isCurrent ? 'In Progress' : 'Completed');
 
-            // Show and color the connector below if it's not the last step
-            if (connector && statusIndex < statusOrder.length - 1) { // Check it's not the last connector
+            // Show and color the connector below this step if it's not the last step in the visual timeline
+            if (connector && index < steps.length - 1) { // Check index against total steps shown
                  connector.classList.remove('hidden', 'border-slate-300');
                  connector.classList.add('border-primary-blue');
             }
@@ -416,14 +424,15 @@ function updateStatusTimeline(currentStatus) {
                 currentStatusFound = true;
             }
         }
-        // Ensure connector after last step is always hidden
-        if (status === 'DELIVERED' && connector) {
-             connector.classList.add('hidden');
-        }
     });
 
-    if (currentStatus && !currentStatusFound && !['PENDING', 'IN-PROCESS', 'ORDER_CREATED', 'CANCELLED'].includes(currentStatus) ) { // Ignore request statuses
-        console.warn(`Unknown order status received: ${currentStatus}. Timeline might be incomplete.`);
+    // If the currentStatus from DB wasn't in our defined statusOrder, log a warning
+    // Also ignore statuses that are not part of the main order flow (like request statuses)
+    const knownOrderStatuses = ['PICKUP_DONE', 'PROCESSING', 'READY', 'DELIVERED', 'CANCELLED']; // Add other final statuses if needed
+    if (currentStatus && !knownOrderStatuses.includes(currentStatus) && !['PENDING', 'IN-PROCESS', 'ORDER_CREATED'].includes(currentStatus)) {
+        console.warn(`Unknown or non-timeline order status received: ${currentStatus}. Timeline might be incomplete.`);
+    } else if (!currentStatusFound && currentStatus && knownOrderStatuses.includes(currentStatus)) {
+         console.warn(`Current status ${currentStatus} was found but not matched in timeline logic?`);
     }
 }
 
@@ -431,7 +440,10 @@ function updateStatusTimeline(currentStatus) {
 // --- Rating Functions ---
 
 function setupStarRating(rating) {
-     if (!starRatingInput || !submitRatingBtn) return;
+     if (!starRatingInput || !submitRatingBtn) {
+          console.error("Star rating elements not found during setup.");
+          return;
+     }
     currentSelectedRating = rating;
     const stars = starRatingInput.querySelectorAll('i.fa-star');
     stars.forEach(star => {
@@ -455,7 +467,10 @@ async function submitRating() {
         alert("Please select a star rating (1-5).");
         return;
     }
-     if (!submitRatingBtn) return;
+     if (!submitRatingBtn) {
+         console.error("Submit button element not found during submit.");
+         return;
+     }
 
     console.log(`Submitting rating ${currentSelectedRating} for order ${currentOrderToRate}`);
     submitRatingBtn.textContent = "Submitting...";
@@ -474,13 +489,17 @@ async function submitRating() {
             placeholder.innerHTML = `<p class="text-xs text-slate-500 mt-2">Rated <i class="fas fa-star text-yellow-400"></i> ${currentSelectedRating}</p>`;
         } else {
              console.warn("Could not find rating placeholder in list to update UI.");
+             // Optional: Force reload the list if placeholder update fails
+             // _initOrderHistory(currentUser); // Pass currentUser if reloading
         }
         hideOrderDetails();
 
     } catch (error) {
         console.error("Error submitting rating to Firestore: ", error);
         alert("Failed to submit rating. Please try again.");
+         // Re-enable button ONLY on error
          submitRatingBtn.textContent = "Submit Rating";
-         submitRatingBtn.disabled = false; // Re-enable only on error
-       }
+         submitRatingBtn.disabled = false;
+    }
+    // Do not re-enable button on success here
 }
